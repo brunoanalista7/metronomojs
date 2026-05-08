@@ -1,556 +1,389 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Metrônomo PRO</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metrônomo PRO - Live Edition</title>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --card: #161616;
+            --text: #ffffff;
+            --primary: #00ff95;
+            --secondary: #252525;
+            --accent: #ff3e3e;
+        }
 
-<style>
+        .light {
+            --bg: #f0f0f0;
+            --card: #ffffff;
+            --text: #1a1a1a;
+            --secondary: #e0e0e0;
+        }
 
-:root{
-    --bg:#111;
-    --card:#1f1f1f;
-    --text:#fff;
-    --primary:#00d084;
-    --secondary:#333;
-}
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: 0.3s;
+            display: flex;
+            justify-content: center;
+        }
 
-.light{
-    --bg:#f2f2f2;
-    --card:#fff;
-    --text:#111;
-    --secondary:#ddd;
-}
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+        }
 
-body{
-    margin:0;
-    font-family:Arial;
-    background:var(--bg);
-    color:var(--text);
-    transition:.3s;
-}
+        .card {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
 
-.container{
-    max-width:800px;
-    margin:auto;
-    padding:20px;
-}
+        h1 { text-align: center; font-weight: 800; letter-spacing: -1px; }
 
-.card{
-    background:var(--card);
-    padding:20px;
-    border-radius:16px;
-    margin-bottom:20px;
-}
+        input, select, button {
+            width: 100%;
+            padding: 15px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 12px;
+            box-sizing: border-box;
+            font-size: 16px;
+            font-weight: 600;
+        }
 
-input,select,button{
-    width:100%;
-    padding:12px;
-    margin-top:10px;
-    border:none;
-    border-radius:10px;
-    box-sizing:border-box;
-}
+        button {
+            cursor: pointer;
+            background: var(--primary);
+            color: #000;
+            transition: transform 0.1s, opacity 0.2s;
+        }
 
-button{
-    cursor:pointer;
-    background:var(--primary);
-    color:white;
-    font-weight:bold;
-}
+        button:active { transform: scale(0.98); }
+        
+        .btn-outline {
+            background: var(--secondary);
+            color: var(--text);
+        }
 
-.row{
-    display:flex;
-    gap:10px;
-}
+        .btn-danger { background: var(--accent); color: white; }
 
-.row > *{
-    flex:1;
-}
+        .row { display: flex; gap: 10px; align-items: center; }
+        .row > * { flex: 1; }
 
-#pulse{
-    width:180px;
-    height:180px;
-    border-radius:50%;
-    background:var(--secondary);
-    margin:30px auto;
-    transition:.05s;
-}
+        #pulse {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: var(--secondary);
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 40px;
+            border: 4px solid transparent;
+            transition: 0.05s;
+        }
 
-.active{
-    transform:scale(1.1);
-    background:var(--primary) !important;
-}
+        .active {
+            transform: scale(1.1);
+            background: var(--primary) !important;
+            color: #000;
+            box-shadow: 0 0 30px var(--primary);
+        }
 
-.music{
-    background:var(--secondary);
-    padding:15px;
-    border-radius:12px;
-    margin-top:10px;
-}
+        .bpm-display { font-size: 3.5rem; font-weight: 900; text-align: center; margin: 10px 0; color: var(--primary); }
 
-.small{
-    opacity:.8;
-    font-size:14px;
-}
+        .beat-indicator { display: flex; justify-content: center; gap: 10px; margin: 20px 0; }
+        .beat-dot { width: 16px; height: 16px; border-radius: 50%; background: #333; transition: 0.1s; }
+        .beat-dot.current { background: var(--primary); transform: scale(1.3); }
 
-.beat-indicator{
-    display:flex;
-    justify-content:center;
-    gap:10px;
-    margin-top:20px;
-}
-
-.beat-dot{
-    width:20px;
-    height:20px;
-    border-radius:50%;
-    background:#555;
-}
-
-.beat-dot.current{
-    background:var(--primary);
-}
-
-</style>
+        label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; margin-top: 15px; display: block; }
+        
+        .music-item {
+            background: var(--secondary);
+            padding: 15px;
+            border-radius: 16px;
+            margin-top: 12px;
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
+    <h1>METRÔNOMO PRO</h1>
 
-<h1>Metrônomo PRO</h1>
+    <div class="card">
+        <div id="pulse">1</div>
+        
+        <div class="bpm-display" id="bpmDisplay">120</div>
 
-<div class="card">
+        <div class="row">
+            <button class="btn-outline" onclick="changeBpm(-5)">-5</button>
+            <button class="btn-outline" onclick="changeBpm(-1)">-1</button>
+            <button class="btn-outline" onclick="changeBpm(1)">+1</button>
+            <button class="btn-outline" onclick="changeBpm(5)">+5</button>
+        </div>
 
-<div id="pulse"></div>
+        <div id="signatureText" style="text-align: center; margin-top: 15px; font-weight: bold; opacity: 0.7;">Fórmula: 4/4</div>
+        <div class="beat-indicator" id="beatIndicator"></div>
 
-<h2 id="bpmText">120 BPM</h2>
+        <button id="toggleBtn" onclick="toggleMetronome()" style="font-size: 1.8rem; padding: 25px; margin-top: 20px;">START</button>
+        
+        <div class="row" style="margin-top: 15px;">
+            <button onclick="tapTempo()" class="btn-outline">TAP TEMPO</button>
+            <button onclick="toggleTheme()" class="btn-outline">MODO 🌓</button>
+        </div>
 
-<div id="signatureText">4/4</div>
+        <label>Volume Master (Boost Ativo)</label>
+        <input type="range" id="volume" min="0" max="1.5" step="0.05" value="0.8">
+        
+        <label>Timbre (Sons para Palco)</label>
+        <select id="soundType">
+            <option value="digital">Digital Sharp (Corta a Mix)</option>
+            <option value="woodblock">Woodblock (Musical)</option>
+            <option value="sidestick">Sidestick (Grave)</option>
+            <option value="sine">Beep Clássico</option>
+        </select>
+    </div>
 
-<div class="beat-indicator" id="beatIndicator"></div>
+    <div class="card">
+        <h3>Adicionar à Setlist</h3>
+        <input type="text" id="musicName" placeholder="Nome da Música">
+        <div class="row">
+            <input type="number" id="musicBpm" placeholder="BPM" value="120">
+            <select id="timeSignature">
+                <option value="2/4">2/4</option>
+                <option value="3/4">3/4</option>
+                <option value="4/4" selected>4/4</option>
+                <option value="5/4">5/4</option>
+                <option value="6/8">6/8</option>
+            </select>
+        </div>
+        <button onclick="saveMusic()">SALVAR NA LISTA</button>
+    </div>
 
-<button id="toggleBtn" onclick="toggleMetronome()">
-START
-</button>
-
-<br><br>
-
-<label>Volume</label>
-<input type="range" id="volume"
-min="0" max="1" step="0.1" value="0.5">
-
-<label>Tipo de clique</label>
-<select id="soundType">
-    <option value="beep">Beep</option>
-    <option value="click">Click</option>
-    <option value="cowbell">Cowbell</option>
-</select>
-
-<br><br>
-
-<button onclick="tapTempo()">
-TAP TEMPO
-</button>
-
-<br><br>
-
-<button onclick="toggleTheme()">
-Modo Escuro/Claro
-</button>
-
-</div>
-
-<div class="card">
-
-<h2>Adicionar Música</h2>
-
-<input type="text"
-id="musicName"
-placeholder="Nome da música">
-
-<div class="row">
-
-<input type="number"
-id="musicBpm"
-placeholder="BPM">
-
-<select id="musicPlaylist">
-    <option>Culto</option>
-    <option>Banda</option>
-    <option>Show</option>
-</select>
-
-</div>
-
-<div class="row">
-
-<select id="timeSignature">
-    <option value="2/4">2/4</option>
-    <option value="3/4">3/4</option>
-    <option value="4/4" selected>4/4</option>
-    <option value="5/4">5/4</option>
-    <option value="6/8">6/8</option>
-    <option value="7/8">7/8</option>
-</select>
-
-<input type="number"
-id="subdivision"
-placeholder="Batidas por tempo"
-value="1"
-min="1"
-max="8">
-
-</div>
-
-<button onclick="addMusic()">
-Salvar Música
-</button>
-
-</div>
-
-<div class="card">
-
-<h2>Músicas</h2>
-
-<div id="musicList"></div>
-
-</div>
-
+    <div class="card">
+        <h3>Músicas Salvas</h3>
+        <div id="musicList"></div>
+    </div>
 </div>
 
 <script>
+    let audioContext = null;
+    let compressor = null;
+    let nextNoteTime = 0.0;
+    let scheduleAheadTime = 0.1;
+    let lookahead = 25.0;
+    let timerID = null;
 
-let bpm = 120;
-let interval = null;
-let audioContext = null;
-let gainNode = null;
-let currentBeat = 0;
-let beatsPerMeasure = 4;
-let subdivision = 1;
+    let isPlaying = false;
+    let bpm = 120;
+    let beatsPerMeasure = 4;
+    let currentSubBeat = 0;
+    let currentBeat = 0;
+    let tapTimes = [];
 
-const pulse =
-document.getElementById("pulse");
-
-function initAudio(){
-
-    audioContext =
-        new(window.AudioContext ||
-        window.webkitAudioContext)();
-
-    gainNode =
-        audioContext.createGain();
-
-    gainNode.connect(
-        audioContext.destination
-    );
-}
-
-function playClick(accent=false, sub=false){
-
-    const osc =
-        audioContext.createOscillator();
-
-    osc.connect(gainNode);
-
-    const sound =
-        document.getElementById("soundType").value;
-
-    if(sound === "beep"){
-        osc.type = "sine";
+    function initAudio() {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // --- MELHORIA PARA AO VIVO: COMPRESSOR ---
+        compressor = audioContext.createDynamicsCompressor();
+        compressor.threshold.setValueAtTime(-15, audioContext.currentTime);
+        compressor.knee.setValueAtTime(30, audioContext.currentTime);
+        compressor.ratio.setValueAtTime(12, audioContext.currentTime);
+        compressor.attack.setValueAtTime(0, audioContext.currentTime);
+        compressor.release.setValueAtTime(0.25, audioContext.currentTime);
+        
+        compressor.connect(audioContext.destination);
     }
 
-    if(sound === "click"){
-        osc.type = "square";
-    }
-
-    if(sound === "cowbell"){
-        osc.type = "triangle";
-    }
-
-    if(accent){
-        osc.frequency.value = 1400;
-    }
-    else if(sub){
-        osc.frequency.value = 500;
-    }
-    else{
-        osc.frequency.value = 900;
-    }
-
-    gainNode.gain.value =
-        document.getElementById("volume").value;
-
-    osc.start();
-
-    osc.stop(audioContext.currentTime + 0.05);
-
-    pulse.classList.add("active");
-
-    setTimeout(()=>{
-        pulse.classList.remove("active");
-    },70);
-}
-
-function toggleMetronome(){
-
-    if(interval){
-        stopMetronome();
-    }
-    else{
-        startMetronome();
-    }
-}
-
-function startMetronome(){
-
-    if(!audioContext){
-        initAudio();
-    }
-
-    const intervalMs =
-        (60 / bpm / subdivision) * 1000;
-
-    let subBeat = 0;
-
-    interval = setInterval(()=>{
-
-        subBeat++;
-
-        const isMainBeat =
-            subBeat % subdivision === 1;
-
-        if(isMainBeat){
-
-            currentBeat++;
-
-            if(currentBeat > beatsPerMeasure){
-                currentBeat = 1;
-            }
-
-            updateBeatIndicator();
-
-            playClick(currentBeat === 1);
-        }
-        else{
-            playClick(false, true);
+    function playClick(time, isFirstBeat) {
+        const osc = audioContext.createOscillator();
+        const envelope = audioContext.createGain();
+        const soundType = document.getElementById("soundType").value;
+        
+        // Configuração de Timbres Profissionais
+        switch(soundType) {
+            case "digital":
+                osc.type = "square"; // Onda quadrada corta melhor o som da banda
+                osc.frequency.setValueAtTime(isFirstBeat ? 2200 : 1000, time);
+                break;
+            case "woodblock":
+                osc.type = "triangle";
+                osc.frequency.setValueAtTime(isFirstBeat ? 1500 : 750, time);
+                break;
+            case "sidestick":
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(isFirstBeat ? 800 : 400, time);
+                break;
+            default:
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(isFirstBeat ? 1000 : 500, time);
         }
 
-    }, intervalMs);
+        const vol = parseFloat(document.getElementById("volume").value);
+        
+        // Envelope de volume "Punchy" (Ataque 2ms)
+        envelope.gain.setValueAtTime(0, time);
+        envelope.gain.linearRampToValueAtTime(vol, time + 0.002);
+        envelope.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
 
-    document.getElementById("toggleBtn")
-        .innerText = "STOP";
-}
+        osc.connect(envelope);
+        envelope.connect(compressor);
 
-function stopMetronome(){
+        osc.start(time);
+        osc.stop(time + 0.06);
 
-    clearInterval(interval);
+        // Visual Sync
+        const delay = (time - audioContext.currentTime) * 1000;
+        setTimeout(() => { updateVisuals(); }, delay);
+    }
 
-    interval = null;
-
-    document.getElementById("toggleBtn")
-        .innerText = "START";
-}
-
-function updateBeatIndicator(){
-
-    const container =
-        document.getElementById("beatIndicator");
-
-    container.innerHTML = "";
-
-    for(let i=1;i<=beatsPerMeasure;i++){
-
-        const dot =
-            document.createElement("div");
-
-        dot.className = "beat-dot";
-
-        if(i === currentBeat){
-            dot.classList.add("current");
+    function scheduler() {
+        while (nextNoteTime < audioContext.currentTime + scheduleAheadTime) {
+            scheduleNote(currentSubBeat, nextNoteTime);
+            advanceNote();
         }
-
-        container.appendChild(dot);
-    }
-}
-
-let tapTimes = [];
-
-function tapTempo(){
-
-    const now = Date.now();
-
-    tapTimes.push(now);
-
-    if(tapTimes.length > 5){
-        tapTimes.shift();
+        timerID = setTimeout(scheduler, lookahead);
     }
 
-    if(tapTimes.length >= 2){
-
-        let intervals = [];
-
-        for(let i=1;i<tapTimes.length;i++){
-
-            intervals.push(
-                tapTimes[i] - tapTimes[i-1]
-            );
+    function scheduleNote(beatIndex, time) {
+        if (beatIndex % 1 === 0) { // Pode ser expandido para subdivisões futuramente
+            playClick(time, beatIndex === 0);
         }
-
-        const avg =
-            intervals.reduce((a,b)=>a+b)
-            / intervals.length;
-
-        bpm = Math.round(60000 / avg);
-
-        document.getElementById("bpmText")
-            .innerText = bpm + " BPM";
-
-        stopMetronome();
     }
-}
 
-function addMusic(){
+    function advanceNote() {
+        const secondsPerBeat = 60.0 / bpm;
+        nextNoteTime += secondsPerBeat;
+        currentSubBeat = (currentSubBeat + 1) % beatsPerMeasure;
+    }
 
-    const name =
-        document.getElementById("musicName").value;
+    function toggleMetronome() {
+        if (!audioContext) initAudio();
+        if (audioContext.state === 'suspended') audioContext.resume();
 
-    const musicBpm =
-        parseInt(
-            document.getElementById("musicBpm").value
-        );
+        isPlaying = !isPlaying;
 
-    const playlist =
-        document.getElementById("musicPlaylist").value;
+        if (isPlaying) {
+            currentSubBeat = 0;
+            currentBeat = 0;
+            nextNoteTime = audioContext.currentTime + 0.05;
+            scheduler();
+            document.getElementById("toggleBtn").innerText = "STOP";
+            document.getElementById("toggleBtn").style.background = "var(--accent)";
+        } else {
+            clearTimeout(timerID);
+            document.getElementById("toggleBtn").innerText = "START";
+            document.getElementById("toggleBtn").style.background = "var(--primary)";
+        }
+    }
 
-    const signature =
-        document.getElementById("timeSignature").value;
+    function updateVisuals() {
+        currentBeat = (currentBeat % beatsPerMeasure) + 1;
+        const pulse = document.getElementById("pulse");
+        pulse.innerText = currentBeat;
+        pulse.classList.add("active");
+        setTimeout(() => pulse.classList.remove("active"), 80);
 
-    const subdivisionValue =
-        parseInt(
-            document.getElementById("subdivision").value
-        );
+        const dots = document.querySelectorAll(".beat-dot");
+        dots.forEach((dot, index) => {
+            dot.classList.toggle("current", index === currentBeat - 1);
+        });
+    }
 
-    const musics =
-        JSON.parse(
-            localStorage.getItem("musics")
-        ) || [];
+    function updateBeatIndicator() {
+        const container = document.getElementById("beatIndicator");
+        container.innerHTML = "";
+        for (let i = 0; i < beatsPerMeasure; i++) {
+            const dot = document.createElement("div");
+            dot.className = "beat-dot";
+            container.appendChild(dot);
+        }
+    }
 
-    musics.push({
-        name,
-        bpm:musicBpm,
-        playlist,
-        signature,
-        subdivision:subdivisionValue
-    });
+    function changeBpm(amount) {
+        bpm = Math.max(30, Math.min(280, bpm + amount));
+        document.getElementById("bpmDisplay").innerText = bpm;
+        document.getElementById("musicBpm").value = bpm;
+    }
 
-    localStorage.setItem(
-        "musics",
-        JSON.stringify(musics)
-    );
+    function tapTempo() {
+        const now = Date.now();
+        tapTimes.push(now);
+        if (tapTimes.length > 4) tapTimes.shift();
+        if (tapTimes.length >= 2) {
+            const avg = (tapTimes[tapTimes.length-1] - tapTimes[0]) / (tapTimes.length - 1);
+            bpm = Math.round(60000 / avg);
+            document.getElementById("bpmDisplay").innerText = bpm;
+        }
+    }
 
-    renderMusics();
-}
+    function saveMusic() {
+        const name = document.getElementById("musicName").value || "Sem Nome";
+        const mBpm = document.getElementById("musicBpm").value;
+        const sig = document.getElementById("timeSignature").value;
+        
+        const musics = JSON.parse(localStorage.getItem("musics_v2") || "[]");
+        musics.push({ name, bpm: mBpm, signature: sig });
+        localStorage.setItem("musics_v2", JSON.stringify(musics));
+        renderMusics();
+    }
 
-function renderMusics(){
+    function renderMusics() {
+        const list = document.getElementById("musicList");
+        const musics = JSON.parse(localStorage.getItem("musics_v2") || "[]");
+        list.innerHTML = "";
+        musics.forEach((m, index) => {
+            const div = document.createElement("div");
+            div.className = "music-item";
+            div.innerHTML = `
+                <div class="row">
+                    <div style="flex: 2">
+                        <strong>${m.name}</strong><br>
+                        <small>${m.bpm} BPM • ${m.signature}</small>
+                    </div>
+                    <button onclick="loadMusic(${index})" style="padding: 10px">PLAY</button>
+                    <button class="btn-danger" onclick="deleteMusic(${index})" style="padding: 10px; flex: 0.4">X</button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    }
 
-    const musicList =
-        document.getElementById("musicList");
+    function loadMusic(index) {
+        const musics = JSON.parse(localStorage.getItem("musics_v2"));
+        const m = musics[index];
+        bpm = parseInt(m.bpm);
+        beatsPerMeasure = parseInt(m.signature.split("/")[0]);
+        document.getElementById("bpmDisplay").innerText = bpm;
+        document.getElementById("signatureText").innerText = "Fórmula: " + m.signature;
+        if (isPlaying) toggleMetronome();
+        updateBeatIndicator();
+        currentBeat = 0;
+    }
 
-    const musics =
-        JSON.parse(
-            localStorage.getItem("musics")
-        ) || [];
+    function deleteMusic(index) {
+        if(confirm("Excluir música?")) {
+            const musics = JSON.parse(localStorage.getItem("musics_v2"));
+            musics.splice(index, 1);
+            localStorage.setItem("musics_v2", JSON.stringify(musics));
+            renderMusics();
+        }
+    }
 
-    musicList.innerHTML = "";
-
-    musics.forEach((music,index)=>{
-
-        const div =
-            document.createElement("div");
-
-        div.className = "music";
-
-        div.innerHTML = `
-            <strong>${music.name}</strong>
-
-            <div class="small">
-                ${music.bpm} BPM •
-                ${music.signature} •
-                subdivisão ${music.subdivision} •
-                ${music.playlist}
-            </div>
-
-            <br>
-
-            <div class="row">
-
-                <button onclick='loadMusic(${JSON.stringify(music)})'>
-                    Carregar
-                </button>
-
-                <button onclick='deleteMusic(${index})'>
-                    Excluir
-                </button>
-
-            </div>
-        `;
-
-        musicList.appendChild(div);
-    });
-}
-
-function loadMusic(music){
-
-    bpm = music.bpm;
-
-    subdivision = music.subdivision;
-
-    beatsPerMeasure =
-        parseInt(
-            music.signature.split("/")[0]
-        );
-
-    document.getElementById("bpmText")
-        .innerText = bpm + " BPM";
-
-    document.getElementById("signatureText")
-        .innerText = music.signature;
-
-    currentBeat = 0;
+    function toggleTheme() { document.body.classList.toggle("light"); }
 
     updateBeatIndicator();
-
-    stopMetronome();
-}
-
-function deleteMusic(index){
-
-    const musics =
-        JSON.parse(
-            localStorage.getItem("musics")
-        ) || [];
-
-    musics.splice(index,1);
-
-    localStorage.setItem(
-        "musics",
-        JSON.stringify(musics)
-    );
-
     renderMusics();
-}
-
-function toggleTheme(){
-
-    document.body.classList.toggle("light");
-}
-
-updateBeatIndicator();
-
-renderMusics();
-
 </script>
-
 </body>
 </html>
