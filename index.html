@@ -132,7 +132,28 @@
             <button class="btn-outline" onclick="changeBpm(5)">+5</button>
         </div>
 
-        <div id="signatureText" style="text-align: center; margin-top: 15px; font-weight: bold; opacity: 0.7;">Fórmula: 4/4</div>
+        <div class="row" style="margin-top: 15px;">
+            <div>
+                <label>Fórmula</label>
+                <select id="mainSignature" onchange="updateMainConfig()">
+                    <option value="2/4">2/4</option>
+                    <option value="3/4">3/4</option>
+                    <option value="4/4" selected>4/4</option>
+                    <option value="5/4">5/4</option>
+                    <option value="6/8">6/8</option>
+                </select>
+            </div>
+            <div>
+                <label>Subdivisão</label>
+                <select id="mainSubdivision" onchange="updateMainConfig()">
+                    <option value="1">1 (Normal)</option>
+                    <option value="2">2 (Colcheia)</option>
+                    <option value="3">3 (Tercina)</option>
+                    <option value="4">4 (Semicolch.)</option>
+                </select>
+            </div>
+        </div>
+
         <div class="beat-indicator" id="beatIndicator"></div>
 
         <button id="toggleBtn" onclick="toggleMetronome()" style="font-size: 1.8rem; padding: 25px; margin-top: 20px;">START</button>
@@ -187,64 +208,69 @@
     let isPlaying = false;
     let bpm = 120;
     let beatsPerMeasure = 4;
+    let currentSubdivision = 1;
     let currentSubBeat = 0;
     let currentBeat = 0;
     let tapTimes = [];
+    let activeMusicIndex = null;
 
     function initAudio() {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // --- MELHORIA PARA AO VIVO: COMPRESSOR ---
         compressor = audioContext.createDynamicsCompressor();
         compressor.threshold.setValueAtTime(-15, audioContext.currentTime);
         compressor.knee.setValueAtTime(30, audioContext.currentTime);
         compressor.ratio.setValueAtTime(12, audioContext.currentTime);
         compressor.attack.setValueAtTime(0, audioContext.currentTime);
         compressor.release.setValueAtTime(0.25, audioContext.currentTime);
-        
         compressor.connect(audioContext.destination);
     }
 
-    function playClick(time, isFirstBeat) {
+    function updateMainConfig() {
+        const sigValue = document.getElementById("mainSignature").value;
+        const subValue = parseInt(document.getElementById("mainSubdivision").value);
+        beatsPerMeasure = parseInt(sigValue.split("/")[0]);
+        currentSubdivision = subValue;
+        
+        if (isPlaying) {
+            currentSubBeat = 0;
+            currentBeat = 0;
+        }
+        updateBeatIndicator();
+    }
+
+    function playClick(time, isFirstBeat, isSubdivision) {
         const osc = audioContext.createOscillator();
         const envelope = audioContext.createGain();
         const soundType = document.getElementById("soundType").value;
         
-        // Configuração de Timbres Profissionais
         switch(soundType) {
             case "digital":
-                osc.type = "square"; // Onda quadrada corta melhor o som da banda
-                osc.frequency.setValueAtTime(isFirstBeat ? 2200 : 1000, time);
+                osc.type = "square";
+                osc.frequency.setValueAtTime(isFirstBeat ? 2200 : (isSubdivision ? 600 : 1000), time);
                 break;
             case "woodblock":
                 osc.type = "triangle";
-                osc.frequency.setValueAtTime(isFirstBeat ? 1500 : 750, time);
-                break;
-            case "sidestick":
-                osc.type = "sine";
-                osc.frequency.setValueAtTime(isFirstBeat ? 800 : 400, time);
+                osc.frequency.setValueAtTime(isFirstBeat ? 1500 : (isSubdivision ? 400 : 750), time);
                 break;
             default:
                 osc.type = "sine";
-                osc.frequency.setValueAtTime(isFirstBeat ? 1000 : 500, time);
+                osc.frequency.setValueAtTime(isFirstBeat ? 1000 : (isSubdivision ? 300 : 500), time);
         }
 
-        const vol = parseFloat(document.getElementById("volume").value);
-        
-        // Envelope de volume "Punchy" (Ataque 2ms)
+        const vol = parseFloat(document.getElementById("volume").value) * (isSubdivision ? 0.5 : 1);
         envelope.gain.setValueAtTime(0, time);
         envelope.gain.linearRampToValueAtTime(vol, time + 0.002);
         envelope.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
 
         osc.connect(envelope);
         envelope.connect(compressor);
-
         osc.start(time);
         osc.stop(time + 0.06);
 
-        // Visual Sync
         const delay = (time - audioContext.currentTime) * 1000;
-        setTimeout(() => { updateVisuals(); }, delay);
+        if (!isSubdivision) {
+            setTimeout(() => { updateVisuals(); }, delay);
+        }
     }
 
     function scheduler() {
@@ -255,16 +281,16 @@
         timerID = setTimeout(scheduler, lookahead);
     }
 
-    function scheduleNote(beatIndex, time) {
-        if (beatIndex % 1 === 0) { // Pode ser expandido para subdivisões futuramente
-            playClick(time, beatIndex === 0);
-        }
+    function scheduleNote(subBeatIndex, time) {
+        const isMainBeat = subBeatIndex % currentSubdivision === 0;
+        const isFirstBeat = subBeatIndex === 0;
+        playClick(time, isFirstBeat, !isMainBeat);
     }
 
     function advanceNote() {
         const secondsPerBeat = 60.0 / bpm;
-        nextNoteTime += secondsPerBeat;
-        currentSubBeat = (currentSubBeat + 1) % beatsPerMeasure;
+        nextNoteTime += secondsPerBeat / currentSubdivision;
+        currentSubBeat = (currentSubBeat + 1) % (beatsPerMeasure * currentSubdivision);
     }
 
     function toggleMetronome() {
@@ -285,6 +311,7 @@
             document.getElementById("toggleBtn").innerText = "START";
             document.getElementById("toggleBtn").style.background = "var(--primary)";
         }
+        renderMusics(); 
     }
 
     function updateVisuals() {
@@ -331,7 +358,6 @@
         const name = document.getElementById("musicName").value || "Sem Nome";
         const mBpm = document.getElementById("musicBpm").value;
         const sig = document.getElementById("timeSignature").value;
-        
         const musics = JSON.parse(localStorage.getItem("musics_v2") || "[]");
         musics.push({ name, bpm: mBpm, signature: sig });
         localStorage.setItem("musics_v2", JSON.stringify(musics));
@@ -343,6 +369,7 @@
         const musics = JSON.parse(localStorage.getItem("musics_v2") || "[]");
         list.innerHTML = "";
         musics.forEach((m, index) => {
+            const isCurrentActive = isPlaying && activeMusicIndex === index;
             const div = document.createElement("div");
             div.className = "music-item";
             div.innerHTML = `
@@ -351,7 +378,10 @@
                         <strong>${m.name}</strong><br>
                         <small>${m.bpm} BPM • ${m.signature}</small>
                     </div>
-                    <button onclick="loadMusic(${index})" style="padding: 10px">PLAY</button>
+                    <button onclick="loadMusic(${index})" 
+                            style="padding: 10px; background: ${isCurrentActive ? 'var(--accent)' : 'var(--primary)'}; color: ${isCurrentActive ? 'white' : 'black'}">
+                        ${isCurrentActive ? 'STOP' : 'PLAY'}
+                    </button>
                     <button class="btn-danger" onclick="deleteMusic(${index})" style="padding: 10px; flex: 0.4">X</button>
                 </div>
             `;
@@ -362,13 +392,30 @@
     function loadMusic(index) {
         const musics = JSON.parse(localStorage.getItem("musics_v2"));
         const m = musics[index];
+        
+        if (isPlaying && activeMusicIndex === index) {
+            toggleMetronome();
+            activeMusicIndex = null;
+            return;
+        }
+
         bpm = parseInt(m.bpm);
-        beatsPerMeasure = parseInt(m.signature.split("/")[0]);
+        document.getElementById("mainSignature").value = m.signature;
+        document.getElementById("mainSubdivision").value = "1";
+        updateMainConfig();
+
         document.getElementById("bpmDisplay").innerText = bpm;
-        document.getElementById("signatureText").innerText = "Fórmula: " + m.signature;
-        if (isPlaying) toggleMetronome();
-        updateBeatIndicator();
-        currentBeat = 0;
+
+        if (!audioContext) initAudio();
+        if (audioContext.state === 'suspended') audioContext.resume();
+
+        if (isPlaying) {
+            clearTimeout(timerID);
+            isPlaying = false;
+        }
+
+        activeMusicIndex = index;
+        toggleMetronome();
     }
 
     function deleteMusic(index) {
