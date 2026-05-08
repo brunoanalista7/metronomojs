@@ -122,7 +122,6 @@
 
     <div class="card">
         <div id="pulse">1</div>
-        
         <div class="bpm-display" id="bpmDisplay">120</div>
 
         <div class="row">
@@ -186,6 +185,12 @@
                 <option value="4/4" selected>4/4</option>
                 <option value="5/4">5/4</option>
                 <option value="6/8">6/8</option>
+            </select>
+            <select id="timeSubdivision">
+                <option value="1">Subdiv: 1</option>
+                <option value="2">Subdiv: 2</option>
+                <option value="3">Subdiv: 3</option>
+                <option value="4">Subdiv: 4</option>
             </select>
         </div>
         <button onclick="saveMusic()">SALVAR NA LISTA</button>
@@ -257,7 +262,7 @@
                 osc.frequency.setValueAtTime(isFirstBeat ? 1000 : (isSubdivision ? 300 : 500), time);
         }
 
-        const vol = parseFloat(document.getElementById("volume").value) * (isSubdivision ? 0.5 : 1);
+        const vol = parseFloat(document.getElementById("volume").value) * (isSubdivision ? 0.4 : 1);
         envelope.gain.setValueAtTime(0, time);
         envelope.gain.linearRampToValueAtTime(vol, time + 0.002);
         envelope.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
@@ -358,8 +363,10 @@
         const name = document.getElementById("musicName").value || "Sem Nome";
         const mBpm = document.getElementById("musicBpm").value;
         const sig = document.getElementById("timeSignature").value;
+        const sub = document.getElementById("timeSubdivision").value; // Salva a subdivisão
+        
         const musics = JSON.parse(localStorage.getItem("musics_v2") || "[]");
-        musics.push({ name, bpm: mBpm, signature: sig });
+        musics.push({ name, bpm: mBpm, signature: sig, subdivision: sub });
         localStorage.setItem("musics_v2", JSON.stringify(musics));
         renderMusics();
     }
@@ -376,7 +383,7 @@
                 <div class="row">
                     <div style="flex: 2">
                         <strong>${m.name}</strong><br>
-                        <small>${m.bpm} BPM • ${m.signature}</small>
+                        <small>${m.bpm} BPM • ${m.signature} (Sub: ${m.subdivision || 1})</small>
                     </div>
                     <button onclick="loadMusic(${index})" 
                             style="padding: 10px; background: ${isCurrentActive ? 'var(--accent)' : 'var(--primary)'}; color: ${isCurrentActive ? 'white' : 'black'}">
@@ -401,9 +408,9 @@
 
         bpm = parseInt(m.bpm);
         document.getElementById("mainSignature").value = m.signature;
-        document.getElementById("mainSubdivision").value = "1";
+        document.getElementById("mainSubdivision").value = m.subdivision || "1"; // Carrega a subdivisão salva
+        
         updateMainConfig();
-
         document.getElementById("bpmDisplay").innerText = bpm;
 
         if (!audioContext) initAudio();
