@@ -167,9 +167,9 @@
         
         <label>Timbre (Sons para Palco)</label>
         <select id="soundType">
-            <option value="digital">Digital Sharp (Corta a Mix)</option>
-            <option value="woodblock">Woodblock (Musical)</option>
-            <option value="sidestick">Sidestick (Grave)</option>
+            <option value="digital">Digital Sharp</option>
+            <option value="woodblock">Woodblock</option>
+            <option value="sidestick">Sidestick</option>
             <option value="sine">Beep Clássico</option>
         </select>
     </div>
@@ -243,26 +243,32 @@
         updateBeatIndicator();
     }
 
+    // FUNÇÃO AJUSTADA: Agora ignora o acento no tempo 1
     function playClick(time, isFirstBeat, isSubdivision) {
         const osc = audioContext.createOscillator();
         const envelope = audioContext.createGain();
         const soundType = document.getElementById("soundType").value;
         
+        // Removemos a distinção de frequência para o isFirstBeat para sons uniformes
         switch(soundType) {
             case "digital":
                 osc.type = "square";
-                osc.frequency.setValueAtTime(isFirstBeat ? 2200 : (isSubdivision ? 600 : 1000), time);
+                osc.frequency.setValueAtTime(isSubdivision ? 600 : 1000, time);
                 break;
             case "woodblock":
                 osc.type = "triangle";
-                osc.frequency.setValueAtTime(isFirstBeat ? 1500 : (isSubdivision ? 400 : 750), time);
+                osc.frequency.setValueAtTime(isSubdivision ? 400 : 750, time);
+                break;
+            case "sidestick":
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(isSubdivision ? 150 : 250, time);
                 break;
             default:
                 osc.type = "sine";
-                osc.frequency.setValueAtTime(isFirstBeat ? 1000 : (isSubdivision ? 300 : 500), time);
+                osc.frequency.setValueAtTime(isSubdivision ? 300 : 500, time);
         }
 
-        const vol = parseFloat(document.getElementById("volume").value) * (isSubdivision ? 0.4 : 1);
+        const vol = parseFloat(document.getElementById("volume").value) * (isSubdivision ? 0.3 : 1);
         envelope.gain.setValueAtTime(0, time);
         envelope.gain.linearRampToValueAtTime(vol, time + 0.002);
         envelope.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
@@ -363,7 +369,7 @@
         const name = document.getElementById("musicName").value || "Sem Nome";
         const mBpm = document.getElementById("musicBpm").value;
         const sig = document.getElementById("timeSignature").value;
-        const sub = document.getElementById("timeSubdivision").value; // Salva a subdivisão
+        const sub = document.getElementById("timeSubdivision").value;
         
         const musics = JSON.parse(localStorage.getItem("musics_v2") || "[]");
         musics.push({ name, bpm: mBpm, signature: sig, subdivision: sub });
@@ -408,7 +414,7 @@
 
         bpm = parseInt(m.bpm);
         document.getElementById("mainSignature").value = m.signature;
-        document.getElementById("mainSubdivision").value = m.subdivision || "1"; // Carrega a subdivisão salva
+        document.getElementById("mainSubdivision").value = m.subdivision || "1";
         
         updateMainConfig();
         document.getElementById("bpmDisplay").innerText = bpm;
