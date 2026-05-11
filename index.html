@@ -135,6 +135,7 @@
             <div>
                 <label>Fórmula</label>
                 <select id="mainSignature" onchange="updateMainConfig()">
+                    <option value="1/4">1/4 (Click Livre)</option>
                     <option value="2/4">2/4</option>
                     <option value="3/4">3/4</option>
                     <option value="4/4" selected>4/4</option>
@@ -162,10 +163,10 @@
             <button onclick="toggleTheme()" class="btn-outline">MODO 🌓</button>
         </div>
 
-        <label>Volume Master (Boost Ativo)</label>
+        <label>Volume Master</label>
         <input type="range" id="volume" min="0" max="1.5" step="0.05" value="0.8">
         
-        <label>Timbre (Sons para Palco)</label>
+        <label>Timbre</label>
         <select id="soundType">
             <option value="digital">Digital Sharp</option>
             <option value="woodblock">Woodblock</option>
@@ -180,6 +181,7 @@
         <div class="row">
             <input type="number" id="musicBpm" placeholder="BPM" value="120">
             <select id="timeSignature">
+                <option value="1/4">1/4</option>
                 <option value="2/4">2/4</option>
                 <option value="3/4">3/4</option>
                 <option value="4/4" selected>4/4</option>
@@ -243,13 +245,11 @@
         updateBeatIndicator();
     }
 
-    // FUNÇÃO AJUSTADA: Agora ignora o acento no tempo 1
     function playClick(time, isFirstBeat, isSubdivision) {
         const osc = audioContext.createOscillator();
         const envelope = audioContext.createGain();
         const soundType = document.getElementById("soundType").value;
         
-        // Removemos a distinção de frequência para o isFirstBeat para sons uniformes
         switch(soundType) {
             case "digital":
                 osc.type = "square";
