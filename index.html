@@ -45,7 +45,8 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        h1 { text-align: center; font-weight: 800; letter-spacing: -1px; }
+        h1 { text-align: center; font-weight: 800; letter-spacing: -1px; margin-bottom: 25px; }
+        h3 { margin-top: 0; display: flex; justify-content: space-between; align-items: center; }
 
         input, select, button {
             width: 100%;
@@ -77,33 +78,18 @@
         .row { display: flex; gap: 10px; align-items: center; }
         .row > * { flex: 1; }
 
-        #pulse {
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
-            background: var(--secondary);
-            margin: 20px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 900;
-            font-size: 40px;
-            border: 4px solid transparent;
-            transition: 0.05s;
-        }
-
-        .active {
-            transform: scale(1.1);
-            background: var(--primary) !important;
-            color: #000;
-            box-shadow: 0 0 30px var(--primary);
+        /* Estilo da lista de músicas no topo */
+        #musicList {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 10px;
         }
 
         .bpm-display { font-size: 3.5rem; font-weight: 900; text-align: center; margin: 10px 0; color: var(--primary); }
 
         .beat-indicator { display: flex; justify-content: center; gap: 10px; margin: 20px 0; }
-        .beat-dot { width: 16px; height: 16px; border-radius: 50%; background: #333; transition: 0.1s; }
-        .beat-dot.current { background: var(--primary); transform: scale(1.3); }
+        .beat-dot { width: 16px; height: 16px; border-radius: 50%; background: #333; transition: 0.1s; border: 2px solid transparent; }
+        .beat-dot.current { background: var(--primary); transform: scale(1.3); box-shadow: 0 0 15px var(--primary); }
 
         label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; margin-top: 15px; display: block; }
         
@@ -112,6 +98,13 @@
             padding: 15px;
             border-radius: 16px;
             margin-top: 12px;
+            border: 2px solid transparent;
+            transition: 0.2s;
+        }
+
+        .music-item.active-item {
+            border-color: var(--primary);
+            background: #1e1e1e;
         }
     </style>
 </head>
@@ -121,7 +114,11 @@
     <h1>METRÔNOMO PRO</h1>
 
     <div class="card">
-        <div id="pulse">1</div>
+        <h3>Músicas Salvas</h3>
+        <div id="musicList"></div>
+    </div>
+
+    <div class="card">
         <div class="bpm-display" id="bpmDisplay">120</div>
 
         <div class="row">
@@ -196,11 +193,6 @@
             </select>
         </div>
         <button onclick="saveMusic()">SALVAR NA LISTA</button>
-    </div>
-
-    <div class="card">
-        <h3>Músicas Salvas</h3>
-        <div id="musicList"></div>
     </div>
 </div>
 
@@ -304,6 +296,7 @@
         currentSubBeat = (currentSubBeat + 1) % (beatsPerMeasure * currentSubdivision);
     }
 
+    // BOTÃO PRINCIPAL START/STOP
     function toggleMetronome() {
         if (!audioContext) initAudio();
         if (audioContext.state === 'suspended') audioContext.resume();
@@ -311,6 +304,10 @@
         isPlaying = !isPlaying;
 
         if (isPlaying) {
+            // BUG FIX: Se iniciou pelo botão principal, limpa a música ativa da lista
+            // Mas apenas se a função não foi chamada por uma música específica
+            if (arguments.length === 0) activeMusicIndex = null;
+
             currentSubBeat = 0;
             currentBeat = 0;
             nextNoteTime = audioContext.currentTime + 0.05;
@@ -327,11 +324,6 @@
 
     function updateVisuals() {
         currentBeat = (currentBeat % beatsPerMeasure) + 1;
-        const pulse = document.getElementById("pulse");
-        pulse.innerText = currentBeat;
-        pulse.classList.add("active");
-        setTimeout(() => pulse.classList.remove("active"), 80);
-
         const dots = document.querySelectorAll(".beat-dot");
         dots.forEach((dot, index) => {
             dot.classList.toggle("current", index === currentBeat - 1);
@@ -352,6 +344,9 @@
         bpm = Math.max(30, Math.min(280, bpm + amount));
         document.getElementById("bpmDisplay").innerText = bpm;
         document.getElementById("musicBpm").value = bpm;
+        // Se mudou o BPM manualmente, a música da lista não é mais a "dona" do tempo atual
+        activeMusicIndex = null;
+        renderMusics();
     }
 
     function tapTempo() {
@@ -362,6 +357,8 @@
             const avg = (tapTimes[tapTimes.length-1] - tapTimes[0]) / (tapTimes.length - 1);
             bpm = Math.round(60000 / avg);
             document.getElementById("bpmDisplay").innerText = bpm;
+            activeMusicIndex = null;
+            renderMusics();
         }
     }
 
@@ -374,6 +371,8 @@
         const musics = JSON.parse(localStorage.getItem("musics_v2") || "[]");
         musics.push({ name, bpm: mBpm, signature: sig, subdivision: sub });
         localStorage.setItem("musics_v2", JSON.stringify(musics));
+        
+        document.getElementById("musicName").value = "";
         renderMusics();
     }
 
@@ -381,21 +380,27 @@
         const list = document.getElementById("musicList");
         const musics = JSON.parse(localStorage.getItem("musics_v2") || "[]");
         list.innerHTML = "";
+        
+        if (musics.length === 0) {
+            list.innerHTML = "<p style='opacity:0.5; text-align:center;'>Nenhuma música salva.</p>";
+            return;
+        }
+
         musics.forEach((m, index) => {
             const isCurrentActive = isPlaying && activeMusicIndex === index;
             const div = document.createElement("div");
-            div.className = "music-item";
+            div.className = `music-item ${isCurrentActive ? 'active-item' : ''}`;
             div.innerHTML = `
                 <div class="row">
-                    <div style="flex: 2">
+                    <div style="flex: 2" onclick="loadMusic(${index})">
                         <strong>${m.name}</strong><br>
                         <small>${m.bpm} BPM • ${m.signature} (Sub: ${m.subdivision || 1})</small>
                     </div>
                     <button onclick="loadMusic(${index})" 
-                            style="padding: 10px; background: ${isCurrentActive ? 'var(--accent)' : 'var(--primary)'}; color: ${isCurrentActive ? 'white' : 'black'}">
+                            style="padding: 10px; flex: 0.8; background: ${isCurrentActive ? 'var(--accent)' : 'var(--primary)'}; color: ${isCurrentActive ? 'white' : 'black'}">
                         ${isCurrentActive ? 'STOP' : 'PLAY'}
                     </button>
-                    <button class="btn-danger" onclick="deleteMusic(${index})" style="padding: 10px; flex: 0.4">X</button>
+                    <button class="btn-danger" onclick="deleteMusic(${index})" style="padding: 10px; flex: 0.3">X</button>
                 </div>
             `;
             list.appendChild(div);
@@ -406,9 +411,9 @@
         const musics = JSON.parse(localStorage.getItem("musics_v2"));
         const m = musics[index];
         
+        // Se clicar na música que já está ativa, desliga o metrônomo
         if (isPlaying && activeMusicIndex === index) {
-            toggleMetronome();
-            activeMusicIndex = null;
+            toggleMetronome(true); // Passamos um argumento para indicar chamada via música
             return;
         }
 
@@ -428,14 +433,15 @@
         }
 
         activeMusicIndex = index;
-        toggleMetronome();
+        toggleMetronome(true); // Passamos um argumento para não limpar o activeMusicIndex
     }
 
     function deleteMusic(index) {
-        if(confirm("Excluir música?")) {
+        if(confirm("Excluir música da lista?")) {
             const musics = JSON.parse(localStorage.getItem("musics_v2"));
             musics.splice(index, 1);
             localStorage.setItem("musics_v2", JSON.stringify(musics));
+            if (activeMusicIndex === index) activeMusicIndex = null;
             renderMusics();
         }
     }
